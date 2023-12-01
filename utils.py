@@ -5,6 +5,17 @@ import requests
 from IPython.display import Image, display
 from openai.types.beta.threads import ThreadMessage
 
+def delete_file(file_path : str) -> None:
+    """Delete a file at the specified path."""
+    try:
+        os.remove(file_path)
+        print(f"File {file_path} has been deleted successfully.")
+    except FileNotFoundError:
+        print(f"The file {file_path} does not exist.")
+    except PermissionError:
+        print(f"Permission denied: unable to delete {file_path}.")
+    except Exception as e:
+        print(f"Error occurred while deleting file {file_path}: {e}")
 
 def download_and_save_image(file_id: str, save_path: str) -> None:
     """

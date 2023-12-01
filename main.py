@@ -1,15 +1,13 @@
 # Import necessary libraries
 import streamlit as st
-import time
 
-import os
-from assistant import PDFChatManager, avalible_tools
-from utils import pretty_print
-from seed import ASSISTANT_SEED_PROMPT
-import tempfile
-from openai.types.beta.threads import ThreadMessage
-from openai.types.beta.thread import Thread
 from openai.types.beta.assistant import Assistant
+
+from assistant import PDFChatManager, avalible_tools
+
+from utils import delete_file
+
+from seed import ASSISTANT_SEED_PROMPT
 
 # Initialize the chat pdf assistance instance
 pdf_assistant_manager: PDFChatManager = PDFChatManager()
@@ -84,6 +82,7 @@ if st.sidebar.button("Remove All PDFs"):
         rm_assistant_file = pdf_assistant_manager.delAssistantFile(
             file_id=file_id)
         del_file = pdf_assistant_manager.deleteFile(file_id=file_id)
+        delete_file(filename)
 
         # Remove the file ID from the session state after deletion
         if rm_assistant_file['status'] == 'success' or del_file['status'] == 'success':
