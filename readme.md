@@ -1,5 +1,7 @@
 ## Project Challenge: Build AI Agents with OpenAI's Assistant API - Quick Streamlit Tutorial
 
+Live Preview: https://pdf-brain-ai.streamlit.app/
+
 I have developed and prototyped the complete concept in chat_witj_pdf.ipynb file. 
 
 We have a Class that Manages are assistant operations. 
