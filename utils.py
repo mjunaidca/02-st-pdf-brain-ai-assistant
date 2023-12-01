@@ -2,7 +2,7 @@
 
 import os
 # import requests
-from IPython.display import Image, display
+# from IPython.display import Image, display
 from openai.types.beta.threads import ThreadMessage
 
 def delete_file(file_path : str) -> None:
