@@ -14,7 +14,6 @@ from openai.types.beta.assistant import Assistant
 # Initialize the chat pdf assistance instance
 pdf_assistant_manager: PDFChatManager = PDFChatManager()
 
-
 # 01 Create an assistant
 pdf_assistant: Assistant = pdf_assistant_manager.create_assistant(
     name="New PDF Assistant", instructions=ASSISTANT_SEED_PROMPT, tools=avalible_tools, file_obj=[]
@@ -23,12 +22,9 @@ pdf_assistant: Assistant = pdf_assistant_manager.create_assistant(
 # 02 Create a thread
 thread = pdf_assistant_manager.create_thread()
 
-# Initialize session state variables for file IDs and chat control
-if "file_id_list" not in st.session_state:
-    st.session_state.file_id_list = []
-
-# if "start_chat" not in st.session_state:
-#     st.session_state.start_chat = False
+# Initialize session state variables for file management
+if "file_id_dict" not in st.session_state:
+    st.session_state.file_id_dict = {}
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = None
@@ -40,42 +36,61 @@ st.set_page_config(page_title="PDF AI",
 
 
 # Create a sidebar for API key configuration and additional features
-st.sidebar.header("Manage PDFs")
+st.sidebar.header("Manage Your PDFs")
+
+# Debugging: Display the current state of file_id_dict
+# st.sidebar.write("Debug - file_id_dict:", st.session_state.file_id_dict)
 
 # Sidebar option for users to upload their own files
 uploaded_file = st.sidebar.file_uploader(
-    "Upload a file to OpenAI embeddings", key="file_uploader")
+    "Upload a file to be given to OpenAI", key="file_uploader")
 
 # Button to upload a user's file and store the file ID
 if st.sidebar.button("Give Uploaded PDF to Assistant"):
-    # Upload file provided by user
-    if uploaded_file:
+
+    if uploaded_file and uploaded_file.name not in st.session_state.file_id_dict:
         with open(f"{uploaded_file.name}", "wb") as f:
             f.write(uploaded_file.getbuffer())
         additional_file_id = pdf_assistant_manager.create_file(
             f"{uploaded_file.name}")
-        st.session_state.file_id_list.append(additional_file_id)
+        st.session_state.file_id_dict[uploaded_file.name] = additional_file_id
 
         # Store its ID in session state
         st.session_state.thread_id = thread.id
 
-# Display all file IDs
-if st.session_state.file_id_list:
+if st.session_state.file_id_dict:
     st.sidebar.write("Uploaded File IDs:")
-    for file_id in st.session_state.file_id_list:
-        st.sidebar.write(file_id)
+    for filename, file_id in st.session_state.file_id_dict.items():
+        st.sidebar.write(f"{filename}: {file_id}")
 
     # Associate files with the assistant
     assistant_file = pdf_assistant_manager.modifyAssistant(
-        file_obj=st.session_state.file_id_list,
+        file_obj=list(st.session_state.file_id_dict.values()),
         assistant_id=pdf_assistant.id,
         new_instructions=ASSISTANT_SEED_PROMPT,
         tools=avalible_tools
     )
-
 else:
-    st.sidebar.warning(
-        "Assistant is running without PDF Files.")
+    st.sidebar.warning("Assistant is running without PDF Files.")
+
+if st.sidebar.button("Remove All PDFs"):
+    # Create a copy of the keys to iterate over
+    filenames = list(st.session_state.file_id_dict.keys())
+
+    for filename in filenames:
+        file_id = st.session_state.file_id_dict[filename]
+
+        # Delete All Files From Open AI Platform
+        rm_assistant_file = pdf_assistant_manager.delAssistantFile(
+            file_id=file_id)
+        del_file = pdf_assistant_manager.deleteFile(file_id=file_id)
+
+        # Remove the file ID from the session state after deletion
+        if rm_assistant_file['status'] == 'success' or del_file['status'] == 'success':
+            del st.session_state.file_id_dict[filename]
+
+    # Refresh the sidebar or interface to reflect the changes
+    st.experimental_rerun()
 
 
 def process_message_with_citations(message):

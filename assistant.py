@@ -33,8 +33,8 @@ class PDFChatManager:
         self.client = OpenAI()
         self.model = model
         self.assistant: Assistant | None = None
-        self.thread: Thread| None = None
-        self.run: Run| None = None
+        self.thread: Thread | None = None
+        self.run: Run | None = None
 
     def list_files(self, purpose: str = 'assistants') -> list:
         """Retrieve a list of files with the specified purpose."""
@@ -132,7 +132,7 @@ class PDFChatManager:
     def add_message_to_thread(self, role: Literal['user'], content: str, file_ids: list = []) -> None:
         if self.thread is None:
             raise ValueError("Thread is not set!")
-        
+
         self.client.beta.threads.messages.create(
             thread_id=self.thread.id,
             role=role,
@@ -144,7 +144,7 @@ class PDFChatManager:
         if self.assistant is None:
             raise ValueError(
                 "Assistant is not set. Cannot run assistant without an assistant.")
-        
+
         if self.thread is None:
             raise ValueError(
                 "Thread is not set!")
@@ -157,7 +157,7 @@ class PDFChatManager:
         return self.run
 
     def wait_for_completion(self, run: Run, thread: Thread):
-        
+
         if self.run is None:
             raise ValueError("Run is not set!")
 
@@ -217,8 +217,19 @@ class PDFChatManager:
 
     # List, Modify And Destroy Files & Assistants
 
-    def deleteFile(self) -> FileDeleted:
-        return self.client.files.delete(self.file_id)
+    def deleteFile(self, file_id: str) -> dict[str, FileDeleted | str]:
+        response: dict[str, FileDeleted | str] = {}
+        try:
+            response['data'] = self.client.files.delete(file_id)
+            response['status'] = 'success'
+            print("Deleted File", response['data'])
+
+        except Exception as e:
+            # Handle other potential exceptions
+            response['status'] = 'error'
+            response['error'] = str(e)
+
+        return response
 
     def retriveAssistantFile(self) -> AssistantFile:
         if self.assistant is None:
@@ -229,18 +240,29 @@ class PDFChatManager:
             file_id=self.file_id
         )
 
-    def delAssistantFile(self) -> FileDeleteResponse:
+    def delAssistantFile(self, file_id: str) -> dict[str, FileDeleteResponse | str]:
         if self.assistant is None:
             raise ValueError(
                 "Assistant is not set. Cannot run assistant without an assistant.")
 
-        return client.beta.assistants.files.delete(
-            assistant_id=self.assistant.id,
-            file_id=self.file_id
-        )
+        response: dict[str, FileDeleteResponse | str] = {}
+        try:
+            response['data'] = client.beta.assistants.files.delete(
+                assistant_id=self.assistant.id,
+                file_id=file_id
+            )
+            print("Deleted Assistant File", response['data'])
+            response['status'] = 'success'
+        except Exception as e:
+            # Handle other potential exceptions
+            response['status'] = 'error'
+            response['error'] = str(e)
+
+        return response
 
     def deleteAssistant(self) -> AssistantDeleted:
         if self.assistant is None:
-            raise ValueError("Assistant is not set. Cannot run assistant without an assistant.")
-       
+            raise ValueError(
+                "Assistant is not set. Cannot run assistant without an assistant.")
+
         return self.client.beta.assistants.delete(self.assistant.id)
